@@ -15,6 +15,9 @@ $local:temp_path = ".chronical_temp"
 # Whether or not the shell stays open after execution
 $local:leave_open = $true
 
+# Change the compression level of archive (Optimal, Fastest, NoCompression)
+$local:compression_level = "Optimal"
+
 # ----------------------------------------------------------------------
 
 # Load in '.chronical-paths' file if exists
@@ -29,7 +32,8 @@ if ($local:paths -eq "") {
     exit 2
 }
 
-Unblock-File ".\chronical.ps1" # Unblocks self to remove warning on second execution
+# Unblocks self to remove warning on second execution
+Unblock-File ".\chronical.ps1"
 
 # Handle existing archives
 if (Test-Path $destination_path) {
@@ -37,21 +41,23 @@ if (Test-Path $destination_path) {
     mv $destination_path "$backup_path\$(Get-Date -Format "yyyy-MM-dd-HH-mm-ss").zip"
 }
 
-# Create temporary file structure
-$local:temp_paths = Split-Path -Path $local:paths -Parent
+# Create temporary file
 mkdir -f $local:temp_path
-cd $local:temp_path
-mkdir -f $local:temp_paths
-cd ..
 
 # Copy into temp items
 $local:paths | ForEach-Object {
+
+    # Ensure file structure is preserved
+    $local:parent = Split-Path -Path $_ -Parent
+    if (($local:parent -ne "") -and (!(Test-Path $local:temp_path/$local:parent))) {
+        mkdir -f $local:temp_path/$local:parent
+    }
+
     Copy-Item -Recurse -Container $_ $local:temp_path/$_   
 }
 
 # Archive the files & cleanup
-Compress-Archive -DestinationPath $local:destination_path -Path $local:temp_path/* -CompressionLevel Optimal -Update
-
+Compress-Archive -Update -DestinationPath $local:destination_path -Path $local:temp_path/* -CompressionLevel $local:compression_level 
 rm -r $local:temp_path
 
 # Comment back in to 
