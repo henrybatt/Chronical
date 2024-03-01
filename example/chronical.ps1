@@ -1,7 +1,7 @@
 # -- Parameters to modify -- #
 
 # Comma separated list of files/dir to archive. Overridden by `.chronical-paths` file
-$local:paths = ""
+$local:paths = "first", "second/nested/other.txt", "second/new.py"
 
 # Path of archive to create
 $local:destination_path = "archive.zip" 

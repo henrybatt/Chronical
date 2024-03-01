@@ -29,6 +29,34 @@ You can choose specific files to be bundled or entire directories
 5. Repeat step 3 to create new chronicals. Previous chronicals will be stored in the `chronical_history` directory stamped with the date they were replaced
 
 
+# Chronical Path Structure
+The `.chronical-paths` file outlines which files/directories are to be archived. The relative paths of each file is listed on a separate line.
+
+### Example
+Taken from the example
+```
+first
+second/nested/other.txt
+second/new.py
+```
+
+For single file used the `chronical.ps1` can be modified to list the paths inside the script removing the requirement for a `.chronical-paths` file.
+
+This is achieved by modifying the `$local:paths` variable on line 4 from its default `""` state.
+
+### Example
+```
+From:
+$local:paths = ""
+
+To:
+$local:paths = "first", "second/nested/other.txt", "second/new.py"
+```
+
+**Note:** The `$local:paths` variable requires comma separated strings for each path.
+
+
+
 # Example
 
 An example usage can be found in the `example` directory containing an example file structure and `.chronicals-path` file.
