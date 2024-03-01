@@ -57,6 +57,29 @@ $local:paths = "first", "second/nested/other.txt", "second/new.py"
 **Note:** The `$local:paths` variable requires comma separated strings for each path.
 
 
+# Customisation
+
+The `chronical.ps1` file contains parameters easily modifiable to change the default behaviour of the script being (found from line 6 onwards).
+
+Simply modify the script with your chosen values.
+
+### Parameters
+```
+# Path of archive to create
+$local:destination_path = "archive.zip"
+
+# Backup existing zip to this directory
+$local:backup_path = "chronical_history" 
+
+# Dir temporarily created to keep zip structure
+$local:temp_path = ".chronical_temp" 
+
+# Whether or not the shell stays open after execution
+$local:leave_open = $true
+
+# Change the compression level of archive (Optimal, Fastest, NoCompression)
+$local:compression_level = "Optimal"
+```
 
 # Example
 
