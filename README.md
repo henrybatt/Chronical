@@ -33,16 +33,17 @@ You can choose specific files to be bundled or entire directories
 The `.chronical-paths` file outlines which files/directories are to be archived. The relative paths of each file is listed on a separate line.
 
 ### Example
-Taken from the example
 ```
 first
 second/nested/other.txt
 second/new.py
 ```
 
-For single file used the `chronical.ps1` can be modified to list the paths inside the script removing the requirement for a `.chronical-paths` file.
+For single file usage the `chronical.ps1` can be modified to list the paths inside the script removing the requirement for a `.chronical-paths` file.
 
 This is achieved by modifying the `$local:paths` variable on line 4 from its default `""` state.
+
+The `$local:paths` are not used if a `.chronical-paths` file is present so ensure it is removed.
 
 ### Example
 ```
