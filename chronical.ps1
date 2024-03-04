@@ -1,3 +1,5 @@
+## -!- Chronical Archiver -- git@github.com:henrybatt/Chronical.git -!- ##
+
 # -- Parameters to modify -- #
 
 # Comma separated list of files/dir to archive. Overridden by `.chronical-paths` file
