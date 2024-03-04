@@ -13,7 +13,10 @@ $local:backup_path = "chronical_history"
 $local:temp_path = ".chronical_temp" 
 
 # Whether or not the shell stays open after execution
-$local:leave_open = $true
+$local:leave_open = $false
+
+# Silently skip over files that don't exist
+$local:skip_non_exist = $true
 
 # Change the compression level of archive (Optimal, Fastest, NoCompression)
 $local:compression_level = "Optimal"
@@ -33,12 +36,12 @@ if ($local:paths -eq "") {
 }
 
 # Unblocks self to remove warning on second execution
-Unblock-File ".\chronical.ps1"
+Unblock-File $MyInvocation.MyCommand.Name
 
 # Handle existing archives
 if (Test-Path $destination_path) {
     mkdir -f $local:backup_path
-    mv $destination_path "$backup_path\$(Get-Date -Format "yyyy-MM-dd-HH-mm-ss").zip"
+    mv $destination_path "$backup_path\$(Get-Date -Format "yyyy-MM-dd@HH-mm-ss").zip"
 }
 
 # Create temporary file
@@ -46,19 +49,25 @@ mkdir -f $local:temp_path
 
 # Copy into temp items
 $local:paths | ForEach-Object {
-
-    # Ensure file structure is preserved
-    $local:parent = Split-Path -Path $_ -Parent
-    if (($local:parent -ne "") -and (!(Test-Path $local:temp_path/$local:parent))) {
-        mkdir -f $local:temp_path/$local:parent
+    if (Test-Path $_) {
+        # Ensure file structure is preserved
+        $local:parent = Split-Path -Path $_ -Parent
+        if (($local:parent -ne "") -and (!(Test-Path $local:temp_path/$local:parent))) {
+            mkdir -f $local:temp_path/$local:parent
+        }
+        Copy-Item -Recurse -Container $_ $local:temp_path/$_           
+    } else { 
+        if (! $local:skip_non_exist) {
+            echo "Skipped | Failed to find $_"
+        }
     }
-
-    Copy-Item -Recurse -Container $_ $local:temp_path/$_   
 }
 
 # Archive the files & cleanup
 Compress-Archive -Update -DestinationPath $local:destination_path -Path $local:temp_path/* -CompressionLevel $local:compression_level 
 rm -r $local:temp_path
+
+echo "Done"
 
 # Comment back in to 
 if ($local:leave_open) {
