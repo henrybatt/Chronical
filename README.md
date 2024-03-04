@@ -46,7 +46,7 @@ This is achieved by modifying the `$local:paths` variable on line 4 from its def
 The `$local:paths` are not used if a `.chronical-paths` file is present so ensure it is removed.
 
 ### Example
-```
+``` PowerShell
 From:
 $local:paths = ""
 
@@ -64,7 +64,7 @@ The `chronical.ps1` file contains parameters easily modifiable to change the def
 Simply modify the script with your chosen values.
 
 ### Parameters
-```
+``` PowerShell
 # Path of archive to create
 $local:destination_path = "archive.zip"
 
@@ -76,6 +76,9 @@ $local:temp_path = ".chronical_temp"
 
 # Whether or not the shell stays open after execution
 $local:leave_open = $true
+
+# Silently skip over files that don't exist
+$local:skip_non_exist = $true
 
 # Change the compression level of archive (Optimal, Fastest, NoCompression)
 $local:compression_level = "Optimal"
