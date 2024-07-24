@@ -1,78 +1,85 @@
-## -!- Chronical Archiver -- git@github.com:henrybatt/Chronical.git -!- ##
+## -!- Chronical Archiver -!- ##
+
+# -- Archive Structure -- #
+# Which files and directories should be included in the archive. Formatted as comma separated strings. Overrides the 'source_path'.
+$local:archive_structure = ""
 
 # -- Parameters to modify -- #
-
-# Comma separated list of files/dir to archive. Overridden by `.chronical-paths` file
-$local:paths = ""
-
-# Path of archive to create
-$local:destination_path = "archive.zip" 
-
-# Backup existing zip to this directory
-$local:backup_path = "chronical_history" 
-
-# Dir temporarily created to keep zip structure
-$local:temp_path = ".chronical_temp" 
-
-# Whether or not the shell stays open after execution
-$local:leave_open = $false
-
-# Silently skip over files that don't exist
-$local:skip_non_exist = $true
-
-# Change the compression level of archive (Optimal, Fastest, NoCompression)
-$local:compression_level = "Optimal"
+$local:parameters = @{
+    paths = @{
+        source_path = "chronical_paths"	# Optional file with archive structure. Only used if 'archive_structure' is empty. Each archive item should be on a new line.
+        destination_path = "archive.zip"	# Path of archive to create
+        backup_path = "chronical_history\"	# Backup existing zip to this directory
+        temp_path = "chronical_temp"		# Temporarily zip directroy preserve zip structure
+    }
+    make_backups    = $true			# Whether or not to keep backups of old archives. Iff false they are just overridden.
+    leave_open      = $true			# Whether or not the shell stays open after execution
+    skip_non_exist  = $true			# Skip over files that don't exist. Iff false the program halts
+    silent          = $false		# Hide console output (Overridden if verbose mode is enabled)
+    verbose         = $false		# Echo out verbose messages (Overrides silent mode)
+    compression_level = "Optimal"	# The compression level of archive (Optimal, Fastest, NoCompression)
+}
 
 # ----------------------------------------------------------------------
 
-# Load in '.chronical-paths' file if exists
-if (Test-Path ".chronical-paths") {
-    $local:paths= $(Get-Content ".chronical-paths")
+# Unblock script to remove warning on usage
+if ($parameters.verbose) { echo "Unblocking script" };
+Unblock-File "$PSScriptRoot\$($MyInvocation.MyCommand.Name)"
+
+# Convert paths from local to absolute.
+if ($parameters.verbose) { echo "Expanding paths from local to absolute" };
+foreach ($local:path in @($parameters.paths.keys)) {
+    $parameters.paths[$path] = "$PSScriptRoot\$($parameters.paths[$path])"
 }
 
-# If paths file and defined paths both empty, exit with warning
-if ($local:paths -eq "") {
-    Write-Host "Error: Missing path structure file`n`nPress any key to exit..."
-    $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
-    exit 2
-}
-
-# Unblocks self to remove warning on second execution
-Unblock-File $MyInvocation.MyCommand.Name
-
-# Handle existing archives
-if (Test-Path $destination_path) {
-    mkdir -f $local:backup_path
-    mv $destination_path "$backup_path\$(Get-Date -Format "yyyy-MM-dd@HH-mm-ss").zip"
-}
-
-# Create temporary file
-mkdir -f $local:temp_path
-
-# Copy into temp items
-$local:paths | ForEach-Object {
-    if (Test-Path $_) {
-        # Ensure file structure is preserved
-        $local:parent = Split-Path -Path $_ -Parent
-        if (($local:parent -ne "") -and (!(Test-Path $local:temp_path/$local:parent))) {
-            mkdir -f $local:temp_path/$local:parent
-        }
-        Copy-Item -Recurse -Container $_ $local:temp_path/$_           
-    } else { 
-        if (! $local:skip_non_exist) {
-            echo "Skipped | Failed to find $_"
-        }
+# If structure not defined by 'archive_structure' attempt to load in the 'source_path' file.
+if ($parameters.verbose) { echo "Loading archive structure" };
+if ($archive_structure -eq "") {
+    if ($parameters.verbose) { echo "Attempt to load separate structure file" };
+    if (Test-Path $parameters.paths.source_path) {
+        if ($parameters.verbose) { echo "Loaded in file" };
+        $archive_structure = $(Get-Content $parameters.paths.source_path)
+    } else {
+        echo "Error: Missing archive structure."
+        rm -r $parameters.paths.temp_path # Cleanup previous files
+        if (parameters.leave_open) {Write-Host "`n`nPress any key to exit..."; $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") }
+        exit 2
     }
 }
 
-# Archive the files & cleanup
-Compress-Archive -Update -DestinationPath $local:destination_path -Path $local:temp_path/* -CompressionLevel $local:compression_level 
-rm -r $local:temp_path
+# Handle backup creation if required
+if ($parameters.verbose) { echo "Checking if backup needs to be made" };
+if ($parameters.make_backups -And (Test-Path $parameters.paths.destination_path)) {
+    if ($parameters.verbose) { echo "Making a backup of previous archive" };
+    mkdir -f $parameters.paths.backup_path | Out-Null
+    mv $parameters.paths.destination_path "$($parameters.paths.backup_path)\$($(Get-Item $($parameters.paths.destination_path)).creationTime.ToString(`"yyyy-MM-dd#HH-mm-ss`")).zip"
+}
 
-echo "Done"
+# Create a temporary directory for structure preservation
+if ($parameters.verbose) { echo "Creating temporary directory for archive" };
+mkdir -f $parameters.paths.temp_path | Out-Null
+foreach ($file in $archive_structure) {
+    if (Test-Path "$PSScriptRoot\$file") {
+        if ($parameters.verbose) { echo "Archiving $file" };
+        mkdir -f "$($parameters.paths.temp_path)\$(Split-Path -Path $file -Parent)" | Out-Null
+        Copy-Item -Recurse -Container "$PSSCriptRoot\$file" "$($parameters.paths.temp_path)\$file"
+    } elseif (! $parameters.skip_non_exist) {
+        echo "ERROR: Missing file from structure: $file"
+        if (parameters.leave_open) {Write-Host "`n`nPress any key to exit..."; $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") }
+        exit 3
+    } elseif (! $parameters.silent -Or $parameters.verbose) {
+        echo "Skipped Missing File: $file"
+    }
+}
 
-# Comment back in to 
-if ($local:leave_open) {
+# Archive the files & cleanup 
+if ($parameters.verbose) { echo "Archiving $file" };
+Compress-Archive -Update -DestinationPath $parameters.paths.destination_path -Path "$($parameters.paths.temp_path)/*" -CompressionLevel $parameters.compression_level
+rm -r $parameters.paths.temp_path
+
+# Keep prompt open after running till key press
+if ($parameters.leave_open) {
+    if (! $parameters.silent -Or $parameters.verbose) { echo "Done" };
     Write-Host "Press any key to exit..."
     $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
 }
