@@ -52,7 +52,7 @@ if ($parameters.verbose) { echo "Checking if backup needs to be made" };
 if ($parameters.make_backups -And (Test-Path $parameters.paths.destination_path)) {
     if ($parameters.verbose) { echo "Making a backup of previous archive" };
     mkdir -f $parameters.paths.backup_path | Out-Null
-    mv $parameters.paths.destination_path "$($parameters.paths.backup_path)\$($(Get-Item $($parameters.paths.destination_path)).creationTime.ToString(`"yyyy-MM-dd#HH-mm-ss`")).zip"
+    mv $parameters.paths.destination_path "$($parameters.paths.backup_path)\$($(Get-Item $($parameters.paths.destination_path)).LastWriteTime.ToString(`"yyyy-MM-dd#HH-mm-ss`")).zip"
 }
 
 # Create a temporary directory for structure preservation
